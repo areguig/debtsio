@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+    <rect width="512" height="512" rx="128" fill="#2196f3"/>
+    <text x="256" y="320" font-family="Arial, sans-serif" font-size="280" font-weight="bold" fill="white" text-anchor="middle">M</text>
+    <path d="M256 426.667c94.257 0 170.667-76.41 170.667-170.667 0-94.257-76.41-170.667-170.667-170.667-94.257 0-170.667 76.41-170.667 170.667 0 94.257 76.41 170.667 170.667 170.667zm0-42.667c70.692 0 128-57.308 128-128s-57.308-128-128-128-128 57.308-128 128 57.308 128 128 128z" fill="white" fill-opacity="0.2"/>
+</svg>

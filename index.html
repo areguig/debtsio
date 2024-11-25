@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#2196f3">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>IOUs</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <div id="login-section">
+            <div class="login-content">
+                <div class="app-logo">
+                    <span class="material-icons logo-icon">account_balance_wallet</span>
+                    <h1>IOUs</h1>
+                </div>
+
+                <div class="app-description">
+                    <p class="tagline" data-t="tagline">Track IOUs with ease</p>
+                    <div class="features">
+                        <div class="feature-item">
+                            <span class="material-icons">track_changes</span>
+                            <span data-t="feature1">Track who owes you and who you owe</span>
+                        </div>
+                        <div class="feature-item">
+                            <span class="material-icons">notifications</span>
+                            <span data-t="feature2">Keep track of due dates</span>
+                        </div>
+                        <div class="feature-item">
+                            <span class="material-icons">bar_chart</span>
+                            <span data-t="feature3">See your total balance at a glance</span>
+                        </div>
+                    </div>
+                </div>
+
+                <button id="login-button" class="google-signin-button">
+                    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google Logo">
+                    <span data-t="signIn">Sign in with Google</span>
+                </button>
+            </div>
+        </div>
+        
+        <div id="user-section" style="display: none;">
+            <header>
+                <div class="app-logo">
+                    <span class="material-icons logo-icon">account_balance_wallet</span>
+                    <h1>IOUs</h1>
+                </div>
+                <div class="user-info">
+                    <span id="user-name" class="user-name">User</span>
+                    <button id="settings-button" class="icon-button" title="Settings">
+                        <span class="material-icons">settings</span>
+                    </button>
+                    <button id="logout-button">
+                        <span class="material-icons">logout</span>
+                        <span data-t="signOut">Sign Out</span>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Settings Modal -->
+            <div id="settings-modal" class="modal">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2 data-t="settings">Settings</h2>
+                        <button class="close-button">
+                            <span class="material-icons">close</span>
+                        </button>
+                    </div>
+                    
+                    <div class="settings-section">
+                        <h3 data-t="language">Language</h3>
+                        <div class="settings-language">
+                            <button class="settings-lang-btn" data-lang="en">
+                                <span class="flag">🇬🇧</span>
+                                <span class="lang-name">English</span>
+                                <span class="material-icons check-icon">check</span>
+                            </button>
+                            <button class="settings-lang-btn" data-lang="fr">
+                                <span class="flag">🇫🇷</span>
+                                <span class="lang-name">Français</span>
+                                <span class="material-icons check-icon">check</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="settings-section">
+                        <h3 data-t="export">Export Data</h3>
+                        <p class="settings-description" data-t="exportDescription">Download your debts data as a CSV file.</p>
+                        <button id="export-csv" class="primary-button">
+                            <span class="material-icons">download</span>
+                            <span data-t="exportCSV">Export to CSV</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="filters">
+                <div class="filter-group">
+                    <label data-t="show">Show:</label>
+                    <select id="type-filter">
+                        <option value="all" data-t="allDebts">All Debts</option>
+                        <option value="owed" data-t="theyOweMe">They Owe Me</option>
+                        <option value="owe" data-t="iOweThem">I Owe Them</option>
+                    </select>
+                </div>
+                <div class="search-group">
+                    <input type="text" id="contact-search" data-t="searchContacts" data-t-attr="placeholder" placeholder="Search contacts...">
+                    <span class="material-icons search-icon">search</span>
+                </div>
+            </div>
+
+            <div class="summary-section">
+                <div class="summary-card">
+                    <h3 data-t="summary">Summary</h3>
+                    <div class="summary-stats">
+                        <div class="stat">
+                            <span class="stat-label" data-t="totalOwed">Total Owed to You:</span>
+                            <span id="total-owed" class="stat-value owed">€0.00</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-label" data-t="totalOwe">Total You Owe:</span>
+                            <span id="total-owe" class="stat-value owe">€0.00</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-label" data-t="netBalance">Net Balance:</span>
+                            <span id="net-balance" class="stat-value">€0.00</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="debts-list"></div>
+
+            <button id="add-debt-button" class="fab" title="Add Debt">
+                <span class="material-icons">add</span>
+            </button>
+
+            <div id="add-debt-modal" class="modal">
+                <div class="modal-content">
+                    <h2 data-t="addDebt">Add Debt</h2>
+                    <form id="debt-form">
+                        <div class="form-group">
+                            <label data-t="type">Type:</label>
+                            <select name="type" required>
+                                <option value="owed" data-t="theyOweMe">They Owe Me</option>
+                                <option value="owe" data-t="iOweThem">I Owe Them</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label data-t="amount">Amount:</label>
+                            <input type="number" name="amount" step="0.01" required>
+                        </div>
+                        <div class="form-group">
+                            <label data-t="contact">Contact:</label>
+                            <div class="input-with-suggestions">
+                                <input type="text" name="contact" id="contact-input" required autocomplete="off">
+                                <div class="suggestions-container" id="contact-suggestions"></div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label data-t="dueDate">Due date: <span data-t="optional">(Optional)</span></label>
+                            <input type="date" name="dueDate">
+                        </div>
+                        <div class="form-group">
+                            <label data-t="comments">Comments: <span data-t="optional">(Optional)</span></label>
+                            <textarea name="comments"></textarea>
+                        </div>
+                        <div class="form-actions">
+                            <button type="button" id="cancel-debt" data-t="cancel">Cancel</button>
+                            <button type="submit" data-t="save">Save</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { 
+            getAuth,
+            signInWithPopup,
+            GoogleAuthProvider,
+            onAuthStateChanged,
+            signOut
+        } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+
+        // Make Firebase functions available globally
+        window.initializeApp = initializeApp;
+        window.getAuth = getAuth;
+        window.signInWithPopup = signInWithPopup;
+        window.GoogleAuthProvider = GoogleAuthProvider;
+        window.onAuthStateChanged = onAuthStateChanged;
+        window.signOut = signOut;
+    </script>
+
+    <!-- App JS -->
+    <script type="module" src="app.js"></script>
+</body>
+</html>
