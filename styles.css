@@ -27,15 +27,77 @@ body {
 }
 
 .container {
+    position: relative;
     max-width: 800px;
     margin: 0 auto;
-    padding: var(--spacing);
+    padding: 20px;
+    height: 100%;
+}
+
+.language-selector.top-right {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    z-index: 1000;
+    display: flex;
+    gap: 5px;
+}
+
+.language-button {
+    background: none;
+    border: 1px solid var(--primary-color);
+    color: var(--primary-color);
+    padding: 4px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.2s ease;
+}
+
+.language-button:hover {
+    background: var(--primary-color);
+    color: white;
+}
+
+.language-button.active {
+    background: var(--primary-color);
+    color: white;
 }
 
 .app-logo {
     display: flex;
     align-items: center;
     gap: 12px;
+    margin-bottom: 20px;
+    position: relative;
+}
+
+.language-selector {
+    position: absolute;
+    right: 0;
+    display: flex;
+    gap: 5px;
+}
+
+.language-button {
+    background: none;
+    border: 1px solid var(--primary-color);
+    color: var(--primary-color);
+    padding: 4px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.2s ease;
+}
+
+.language-button:hover {
+    background: var(--primary-color);
+    color: white;
+}
+
+.language-button.active {
+    background: var(--primary-color);
+    color: white;
 }
 
 .app-logo h1 {
@@ -245,6 +307,36 @@ header {
 
 .fab .material-icons {
     font-size: 24px;
+}
+
+.offline-banner {
+    position: fixed;
+    bottom: env(safe-area-inset-bottom, 0);
+    left: 0;
+    right: 0;
+    background-color: var(--primary-color);
+    color: white;
+    padding: 8px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-weight: 500;
+    z-index: 1000;
+    animation: slideUp 0.3s ease-out;
+}
+
+.offline-banner .material-icons {
+    font-size: 20px;
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(100%);
+    }
+    to {
+        transform: translateY(0);
+    }
 }
 
 @media (max-width: 600px) {
@@ -864,26 +956,24 @@ header {
 
 .debt-actions {
     display: flex;
-    gap: 8px;
-    margin-top: 12px;
+    gap: 10px;
+    margin-top: var(--spacing);
 }
 
 .action-button {
     display: flex;
     align-items: center;
-    gap: 4px;
-    padding: 8px 12px;
-    border: none;
-    border-radius: 6px;
-    background-color: #e9ecef;
-    color: #495057;
-    font-size: 14px;
-    cursor: pointer;
-    transition: all 0.2s ease;
+    gap: 5px;
+    padding: 5px 10px;
+    font-size: 1rem;
+    background-color: transparent;
+    color: var(--primary-color);
+    border: 1px solid var(--primary-color);
 }
 
 .action-button:hover {
-    background-color: #dee2e6;
+    background-color: var(--primary-color);
+    color: white;
 }
 
 .action-button .material-icons {
@@ -1404,4 +1494,111 @@ header {
     .settings-lang-btn .lang-name {
         font-size: 14px;
     }
+}
+
+.auth-container {
+    width: 100%;
+    max-width: 400px;
+    margin-top: 24px;
+}
+
+.auth-tabs {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.auth-tab {
+    flex: 1;
+    padding: 12px;
+    border: none;
+    background: none;
+    color: var(--text-secondary);
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s ease;
+}
+
+.auth-tab.active {
+    color: var(--primary-color);
+    border-bottom-color: var(--primary-color);
+}
+
+.auth-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.form-group label {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+.form-group input {
+    padding: 12px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    font-size: 16px;
+    transition: border-color 0.2s ease;
+}
+
+.form-group input:focus {
+    border-color: var(--primary-color);
+    outline: none;
+}
+
+.text-button {
+    background: none;
+    border: none;
+    color: var(--primary-color);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    padding: 0;
+    text-align: center;
+}
+
+.text-button:hover {
+    text-decoration: underline;
+}
+
+.auth-divider {
+    position: relative;
+    text-align: center;
+    margin: 24px 0;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    width: calc(50% - 20px);
+    height: 1px;
+    background-color: var(--border-color);
+}
+
+.auth-divider::before {
+    left: 0;
+}
+
+.auth-divider::after {
+    right: 0;
+}
+
+.auth-divider span {
+    background-color: white;
+    padding: 0 12px;
+    color: var(--text-secondary);
+    font-size: 14px;
 }

@@ -65,6 +65,26 @@ const translations = {
         feature1: 'Track who owes you and who you owe',
         feature2: 'Keep track of due dates',
         feature3: 'See your total balance at a glance',
+
+        // Auth
+        signIn: 'Sign In',
+        signInWithGoogle: 'Sign in with Google',
+        register: 'Register',
+        email: 'Email',
+        password: 'Password',
+        name: 'Name',
+        forgotPassword: 'Forgot Password?',
+        or: 'or',
+        
+        // Auth Errors
+        errorInvalidEmail: 'Please enter a valid email address.',
+        errorWeakPassword: 'Password should be at least 6 characters long.',
+        errorEmailInUse: 'This email address is already in use.',
+        errorWrongPassword: 'Incorrect password.',
+        errorUserNotFound: 'No user found with this email address.',
+        errorResetPassword: 'Failed to send password reset email. Please try again.',
+        successResetPassword: 'Password reset email sent. Please check your inbox.',
+        successRegistration: 'Registration successful! Please log in.',
     },
     fr: {
         // Filters
@@ -132,6 +152,26 @@ const translations = {
         feature1: 'Suivez qui vous doit et ce que vous devez',
         feature2: 'Gardez un œil sur les échéances',
         feature3: 'Visualisez votre solde en un coup d\'œil',
+
+        // Auth
+        signIn: 'Se connecter',
+        signInWithGoogle: 'Se connecter avec Google',
+        register: 'S\'inscrire',
+        email: 'Email',
+        password: 'Mot de passe',
+        name: 'Nom',
+        forgotPassword: 'Mot de passe oublié ?',
+        or: 'ou',
+        
+        // Auth Errors
+        errorInvalidEmail: 'Veuillez entrer une adresse email valide.',
+        errorWeakPassword: 'Le mot de passe doit contenir au moins 6 caractères.',
+        errorEmailInUse: 'Cette adresse email est déjà utilisée.',
+        errorWrongPassword: 'Mot de passe incorrect.',
+        errorUserNotFound: 'Aucun utilisateur trouvé avec cette adresse email.',
+        errorResetPassword: 'Échec de l\'envoi de l\'email de réinitialisation. Veuillez réessayer.',
+        successResetPassword: 'Email de réinitialisation envoyé. Veuillez vérifier votre boîte de réception.',
+        successRegistration: 'Inscription réussie ! Veuillez vous connecter.',
     }
 };
 

@@ -6,13 +6,24 @@
     <meta name="theme-color" content="#2196f3">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="description" content="Track who owes you and who you owe">
     <title>IOUs</title>
+    
+    <!-- PWA -->
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icons/icon-192x192.png">
+    
+    <!-- Styles -->
     <link rel="stylesheet" href="styles.css">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
     <div class="container">
+        <div class="language-selector top-right">
+            <button class="language-button" data-lang="en">EN</button>
+            <button class="language-button" data-lang="fr">FR</button>
+        </div>
         <div id="login-section">
             <div class="login-content">
                 <div class="app-logo">
@@ -38,10 +49,50 @@
                     </div>
                 </div>
 
-                <button id="login-button" class="google-signin-button">
-                    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google Logo">
-                    <span data-t="signIn">Sign in with Google</span>
-                </button>
+                <div class="auth-container">
+                    <div class="auth-tabs">
+                        <button class="auth-tab active" data-tab="login" data-t="signIn">Sign In</button>
+                        <button class="auth-tab" data-tab="register" data-t="register">Register</button>
+                    </div>
+
+                    <form id="login-form" class="auth-form">
+                        <div class="form-group">
+                            <label for="login-email" data-t="email">Email</label>
+                            <input type="email" id="login-email" name="email" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="login-password" data-t="password">Password</label>
+                            <input type="password" id="login-password" name="password" required>
+                        </div>
+                        <button type="submit" class="primary-button" data-t="signIn">Sign In</button>
+                        <button type="button" id="forgot-password" class="text-button" data-t="forgotPassword">Forgot Password?</button>
+                    </form>
+
+                    <form id="register-form" class="auth-form" style="display: none;">
+                        <div class="form-group">
+                            <label for="register-name" data-t="name">Name</label>
+                            <input type="text" id="register-name" name="name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="register-email" data-t="email">Email</label>
+                            <input type="email" id="register-email" name="email" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="register-password" data-t="password">Password</label>
+                            <input type="password" id="register-password" name="password" required minlength="6">
+                        </div>
+                        <button type="submit" class="primary-button" data-t="register">Register</button>
+                    </form>
+
+                    <div class="auth-divider">
+                        <span data-t="or">or</span>
+                    </div>
+
+                    <button id="login-button" class="google-signin-button">
+                        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google Logo">
+                        <span data-t="signInWithGoogle">Sign in with Google</span>
+                    </button>
+                </div>
             </div>
         </div>
         
@@ -181,6 +232,12 @@
         </div>
     </div>
 
+    <!-- Offline Banner -->
+    <div id="offline-banner" class="offline-banner" style="display: none;">
+        <span class="material-icons">cloud_off</span>
+        <span data-t="offlineMode">Offline Mode</span>
+    </div>
+
     <!-- Firebase SDK -->
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
@@ -203,5 +260,22 @@
 
     <!-- App JS -->
     <script type="module" src="app.js"></script>
+    <script type="module">
+        // Register Service Worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                const swPath = location.hostname === 'areguig.github.io' ? '/debtsio/sw.js' : '/sw.js';
+                const swScope = location.hostname === 'areguig.github.io' ? '/debtsio/' : '/';
+                
+                navigator.serviceWorker.register(swPath, { scope: swScope })
+                    .then(registration => {
+                        console.log('ServiceWorker registration successful with scope:', registration.scope);
+                    })
+                    .catch(err => {
+                        console.error('ServiceWorker registration failed:', err);
+                    });
+            });
+        }
+    </script>
 </body>
 </html>

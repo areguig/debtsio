@@ -1,6 +1,22 @@
+import { t, getCurrentLanguage, setLanguage, formatCurrency, formatDate } from './translations.js';
+import * as db from './db.js';
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+import { 
+    getAuth,
+    signInWithEmailAndPassword,
+    createUserWithEmailAndPassword,
+    updateProfile,
+    sendPasswordResetEmail,
+    signInWithPopup,
+    GoogleAuthProvider,
+    browserLocalPersistence,
+    setPersistence
+} from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+
 // Initialize Firebase with worker config
 let firebaseConfig = null;
 let auth = null;
+let isOnline = navigator.onLine;
 
 async function initializeFirebaseApp() {
     try {
@@ -9,13 +25,51 @@ async function initializeFirebaseApp() {
         firebaseConfig = await response.json();
         
         // Initialize Firebase
-        const app = window.initializeApp(firebaseConfig);
-        auth = window.getAuth(app);
+        const app = initializeApp(firebaseConfig);
+        auth = getAuth(app);
+        
+        // Initialize IndexedDB
+        await db.initDB();
+        
+        // Set persistence to local
+        await setPersistence(auth, browserLocalPersistence);
         
         // Setup auth listeners after Firebase is initialized
         setupAuthListeners();
+        setupNetworkListeners();
+        
+        console.log('Firebase initialized successfully');
     } catch (error) {
+        console.error('Firebase initialization error:', error);
         alert(t('errorInitializing'));
+    }
+}
+
+// Network status handlers
+function setupNetworkListeners() {
+    const offlineBanner = document.getElementById('offline-banner');
+    
+    db.addOnlineListener(() => {
+        isOnline = true;
+        offlineBanner.style.display = 'none';
+        syncPendingChanges();
+    });
+    
+    db.addOfflineListener(() => {
+        isOnline = false;
+        offlineBanner.style.display = 'flex';
+    });
+}
+
+// Sync pending changes when back online
+async function syncPendingChanges() {
+    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+        try {
+            const registration = await navigator.serviceWorker.ready;
+            await registration.sync.register('sync-debts');
+        } catch (error) {
+            console.error('Error registering sync:', error);
+        }
     }
 }
 
@@ -51,6 +105,62 @@ async function firestoreRequest(path, options = {}) {
         return response.json();
     }
     return response.text();
+}
+
+// Load and display debts
+async function loadDebts() {
+    try {
+        const user = auth.currentUser;
+        if (!user) return;
+
+        let debts = [];
+        
+        if (isOnline) {
+            // Try to load from Firestore
+            try {
+                const queryParams = new URLSearchParams({
+                    'orderBy': 'createdAt desc',
+                    'pageSize': '100'
+                });
+                
+                const response = await firestoreRequest(`debts?${queryParams.toString()}`);
+
+                debts = response.documents
+                    ? response.documents
+                        .filter(doc => {
+                            const fields = doc.fields || {};
+                            return fields.userId?.stringValue === user.uid;
+                        })
+                        .map(doc => ({
+                            id: doc.name.split('/').pop(),
+                            type: doc.fields.type.stringValue,
+                            amount: parseFloat(doc.fields.amount.doubleValue || doc.fields.amount.integerValue || 0),
+                            contact: doc.fields.contact.stringValue,
+                            dueDate: doc.fields.dueDate?.stringValue || null,
+                            comments: doc.fields.comments?.stringValue || '',
+                            createdAt: doc.fields.createdAt.stringValue,
+                            userId: user.uid
+                        }))
+                    : [];
+                
+                // Update local database
+                for (const debt of debts) {
+                    await db.addDebt(debt);
+                }
+            } catch (error) {
+                console.error('Error loading from Firestore:', error);
+            }
+        }
+        
+        // Load from local database
+        debts = await db.getDebts(user.uid);
+        
+        currentDebts = debts;
+        filterDebts();
+        updateSummary(currentDebts);
+    } catch (error) {
+        debtsList.innerHTML = `<p class="error">${t('errorLoading')}</p>`;
+    }
 }
 
 // DOM elements
@@ -108,52 +218,14 @@ function updateSummary(debts) {
     netBalanceEl.className = `stat-value ${netBalance >= 0 ? 'positive' : 'negative'}`;
 }
 
-// Load and display debts
-async function loadDebts() {
-    try {
-        const user = auth.currentUser;
-        if (!user) return;
-
-        // Query debts using Firestore REST API
-        const queryParams = new URLSearchParams({
-            'orderBy': 'createdAt desc',
-            'pageSize': '100'
-        });
-        
-        const response = await firestoreRequest(`debts?${queryParams.toString()}`);
-
-        currentDebts = response.documents
-            ? response.documents
-                .filter(doc => {
-                    const fields = doc.fields || {};
-                    return fields.userId?.stringValue === user.uid;
-                })
-                .map(doc => ({
-                    id: doc.name.split('/').pop(),
-                    type: doc.fields.type.stringValue,
-                    amount: parseFloat(doc.fields.amount.doubleValue || doc.fields.amount.integerValue || 0),
-                    contact: doc.fields.contact.stringValue,
-                    dueDate: doc.fields.dueDate?.stringValue || null,
-                    comments: doc.fields.comments?.stringValue || '',
-                    createdAt: doc.fields.createdAt.stringValue
-                }))
-            : [];
-
-        filterDebts();
-        updateSummary(currentDebts);
-    } catch (error) {
-        debtsList.innerHTML = `<p class="error">${t('errorLoading')}</p>`;
-    }
-}
-
 // Setup auth event listeners
 function setupAuthListeners() {
-    const provider = new window.GoogleAuthProvider();
+    const provider = new GoogleAuthProvider();
     provider.addScope('email');
 
     loginButton.addEventListener('click', async () => {
         try {
-            await window.signInWithPopup(auth, provider);
+            await signInWithPopup(auth, provider);
         } catch (error) {
             alert(t('errorSignIn'));
         }
@@ -161,13 +233,13 @@ function setupAuthListeners() {
 
     logoutButton.addEventListener('click', async () => {
         try {
-            await window.signOut(auth);
+            await auth.signOut();
         } catch (error) {
             alert(t('errorSignOut'));
         }
     });
 
-    window.onAuthStateChanged(auth, user => {
+    auth.onAuthStateChanged(user => {
         if (user) {
             loginSection.style.display = 'none';
             userSection.style.display = 'block';
@@ -192,7 +264,7 @@ cancelDebtButton.addEventListener('click', () => {
     debtForm.reset();
 });
 
-// Form submission
+// Add debt with offline support
 debtForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     
@@ -204,25 +276,53 @@ debtForm.addEventListener('submit', async (e) => {
 
     const formData = new FormData(debtForm);
     const debtData = {
-        fields: {
-            type: { stringValue: formData.get('type') },
-            amount: { doubleValue: parseFloat(formData.get('amount')) },
-            contact: { stringValue: formData.get('contact') },
-            dueDate: formData.get('dueDate') 
-                ? { stringValue: formData.get('dueDate') } 
-                : { nullValue: null },
-            comments: { stringValue: formData.get('comments') || '' },
-            createdAt: { stringValue: new Date().toISOString() },
-            userId: { stringValue: user.uid }
-        }
+        type: formData.get('type'),
+        amount: parseFloat(formData.get('amount')),
+        contact: formData.get('contact'),
+        dueDate: formData.get('due-date') || null,
+        comments: formData.get('comments') || '',
+        createdAt: new Date().toISOString(),
+        userId: user.uid
     };
 
     try {
-        // Create document with auto-generated ID
-        await firestoreRequest('debts', {
-            method: 'POST',
-            body: JSON.stringify(debtData)
-        });
+        // Generate a unique ID
+        debtData.id = crypto.randomUUID();
+        
+        // Save to local database
+        await db.addDebt(debtData);
+        
+        if (isOnline) {
+            // Try to save to Firestore
+            try {
+                await firestoreRequest('debts', {
+                    method: 'POST',
+                    body: JSON.stringify(debtData)
+                });
+            } catch (error) {
+                // Store the change for later sync
+                await db.addPendingChange({
+                    url: 'https://moneyio.akli-reguig.workers.dev/firestore/debts',
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${await getIdToken()}`
+                    },
+                    body: JSON.stringify(debtData)
+                });
+            }
+        } else {
+            // Store the change for later sync
+            await db.addPendingChange({
+                url: 'https://moneyio.akli-reguig.workers.dev/firestore/debts',
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${await getIdToken()}`
+                },
+                body: JSON.stringify(debtData)
+            });
+        }
         
         addDebtModal.classList.remove('active');
         debtForm.reset();
@@ -232,28 +332,8 @@ debtForm.addEventListener('submit', async (e) => {
     }
 });
 
-import { t, getCurrentLanguage, setLanguage, formatCurrency, formatDate } from './translations.js';
-
-// Language selection in settings
-const settingsLangButtons = document.querySelectorAll('.settings-lang-btn');
-
-settingsLangButtons.forEach(button => {
-    button.addEventListener('click', () => {
-        const lang = button.dataset.lang;
-        updateLanguage(lang);
-    });
-});
-
-// Update language
-function updateLanguage(lang) {
-    setLanguage(lang);
-    
-    // Update active language button
-    settingsLangButtons.forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.lang === lang);
-    });
-    
-    // Update all text content
+// Update translations
+function updateTranslations() {
     document.querySelectorAll('[data-t]').forEach(element => {
         const key = element.dataset.t;
         if (element.dataset.tAttr) {
@@ -264,33 +344,37 @@ function updateLanguage(lang) {
     });
     
     // Refresh the debts display to update formatting
-    if (currentDebts.length > 0) {
+    if (typeof currentDebts !== 'undefined' && currentDebts.length > 0) {
         displayDebts(filteredDebts);
         updateSummary(currentDebts);
     }
-
-    // Refresh contact suggestions if active
-    if (suggestionsContainer.classList.contains('active')) {
-        showSuggestions(contactInput.value);
-    }
 }
 
-// Initialize language selection
-document.addEventListener('DOMContentLoaded', () => {
-    const currentLang = getCurrentLanguage();
-    updateLanguage(currentLang);
+// Language selection
+const languageButtons = document.querySelectorAll('.language-button');
+
+languageButtons.forEach(button => {
+    button.addEventListener('click', () => {
+        const lang = button.dataset.lang;
+        setLanguage(lang);
+        
+        // Update active state of buttons
+        languageButtons.forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.lang === lang);
+        });
+        
+        // Update all translations
+        updateTranslations();
+    });
 });
 
-// Initialize language
+// Set initial active language button
 document.addEventListener('DOMContentLoaded', () => {
     const currentLang = getCurrentLanguage();
-    updateLanguage(currentLang);
-    document.querySelectorAll('.lang-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const lang = btn.dataset.lang;
-            updateLanguage(lang);
-        });
+    languageButtons.forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.lang === currentLang);
     });
+    updateTranslations();
 });
 
 // Language dropdown handlers
@@ -684,5 +768,113 @@ document.addEventListener('click', (e) => {
     }
 });
 
+// Auth UI handlers
+const authTabs = document.querySelectorAll('.auth-tab');
+const loginForm = document.getElementById('login-form');
+const registerForm = document.getElementById('register-form');
+const forgotPasswordButton = document.getElementById('forgot-password');
+
+// Switch between login and register forms
+authTabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+        const formId = tab.dataset.tab;
+        
+        // Update active tab
+        authTabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        
+        // Show selected form
+        loginForm.style.display = formId === 'login' ? 'flex' : 'none';
+        registerForm.style.display = formId === 'register' ? 'flex' : 'none';
+    });
+});
+
+// Handle login form submission
+loginForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    if (!auth) {
+        alert(t('errorInitializing'));
+        return;
+    }
+    
+    const email = loginForm.querySelector('[name="email"]').value;
+    const password = loginForm.querySelector('[name="password"]').value;
+    
+    try {
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        console.log('Login successful:', userCredential.user.email);
+    } catch (error) {
+        console.error('Login error:', error);
+        switch (error.code) {
+            case 'auth/invalid-email':
+                alert(t('errorInvalidEmail'));
+                break;
+            case 'auth/user-not-found':
+                alert(t('errorUserNotFound'));
+                break;
+            case 'auth/wrong-password':
+                alert(t('errorWrongPassword'));
+                break;
+            default:
+                alert(error.message);
+        }
+    }
+});
+
+// Handle registration form submission
+registerForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const name = registerForm.querySelector('[name="name"]').value;
+    const email = registerForm.querySelector('[name="email"]').value;
+    const password = registerForm.querySelector('[name="password"]').value;
+    
+    try {
+        // Create user
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        
+        // Update profile with name
+        await updateProfile(userCredential.user, {
+            displayName: name
+        });
+        
+        // Show success message and switch to login
+        alert(t('successRegistration'));
+        authTabs[0].click();
+    } catch (error) {
+        switch (error.code) {
+            case 'auth/email-already-in-use':
+                alert(t('errorEmailInUse'));
+                break;
+            case 'auth/invalid-email':
+                alert(t('errorInvalidEmail'));
+                break;
+            case 'auth/weak-password':
+                alert(t('errorWeakPassword'));
+                break;
+            default:
+                alert(error.message);
+        }
+    }
+});
+
+// Handle forgot password
+forgotPasswordButton.addEventListener('click', async () => {
+    const email = loginForm.querySelector('[name="email"]').value;
+    
+    if (!email) {
+        alert(t('errorInvalidEmail'));
+        return;
+    }
+    
+    try {
+        await sendPasswordResetEmail(auth, email);
+        alert(t('successResetPassword'));
+    } catch (error) {
+        alert(t('errorResetPassword'));
+    }
+});
+
 // Initialize the app
-document.addEventListener('DOMContentLoaded', initializeFirebaseApp);
+initializeFirebaseApp();
